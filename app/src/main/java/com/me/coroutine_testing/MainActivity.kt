@@ -3,10 +3,7 @@ package com.me.coroutine_testing
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.Button
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -23,6 +20,7 @@ import com.me.coroutine_testing.ui.theme.CoroutinetestingTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -48,29 +46,62 @@ fun CruncherScreen() {
             .fillMaxSize()
             .padding(all = 16.dp)
     ) {
-
         val coroutineScope = rememberCoroutineScope()
+        val cruncher = NumberCruncher(coroutineScope)
         var textState by rememberSaveable { mutableStateOf("Press button to start calculation") }
-        val cruncher = NumberCruncher()
 
         Text(text = textState)
 
         Button(
             onClick = {
-                textState = "Calculating ..."
+                textState = "Start single coroutine ..."
                 coroutineScope.launch {
                     val calculationResult = cruncher.getResult()
                     textState = String.format("Got result %d", calculationResult)
                 }
             },
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text(
-                text = "Calculate",
+                text = "Calculate result with single coroutine",
                 color = Color.White
             )
         }
-    }
 
+        Button(
+            onClick = {
+                textState = "Emitting result to shared flow ..."
+                coroutineScope.launch {
+                    cruncher.calculateShared()
+                    cruncher.resultsShared.collect{
+                        textState = String.format("Got result %d", it)
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Calculate result with shared flow",
+            )
+        }
+
+        Button(
+            onClick = {
+                coroutineScope.launch {
+                    cruncher.calculateState()
+                    cruncher.resultsState.collect{
+                        textState = if(it == -1) "Emitting result to state flow ..."
+                        else String.format("Got result %d", it)
+                    }
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(
+                text = "Calculate result with state flow",
+            )
+        }
+    }
 }
 
 @Preview(showBackground = true)
